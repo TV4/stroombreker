@@ -7,9 +7,7 @@ class Cb::CircuitBreaker
   def execute
     update_state
 
-    if @state == :open
-      raise Cb::CircuitBrokenException
-    end
+    raise Cb::CircuitBrokenException if @state == :open
 
     yield
   rescue => e
