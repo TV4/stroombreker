@@ -69,7 +69,7 @@ describe "CircuitBreaker" do
     with_expected_underlying_error { cb.execute(&failing_work) }
     with_expected_broken_circuit { cb.execute(&failing_work) }
 
-    Timecop.travel(11.minutes.from_now)
+    Timecop.travel(11.seconds.from_now)
 
     expect {
       cb.execute(&failing_work)
@@ -86,7 +86,7 @@ describe "CircuitBreaker" do
     with_expected_underlying_error { cb.execute(&work_with_error) }
     with_expected_broken_circuit { cb.execute(&work_with_error) }
 
-    Timecop.travel(11.minutes.from_now)
+    Timecop.travel(11.seconds.from_now)
 
     with_expected_broken_circuit { cb.execute(&work_with_error) }
 
