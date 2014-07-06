@@ -11,7 +11,7 @@ describe "CircuitBreaker" do
   end
 
   it "passes response value back when everything works" do
-    cb = Cb::CircuitBreaker.new(threshold: 0)
+    cb = Cb::CircuitBreaker.new(threshold: 0, half_open_timeout: 10)
 
     value = cb.execute do
       "simulated api call"
@@ -21,7 +21,7 @@ describe "CircuitBreaker" do
   end
 
   it "returns the cause exception if within threshold" do
-    cb = Cb::CircuitBreaker.new(threshold: 1)
+    cb = Cb::CircuitBreaker.new(threshold: 1, half_open_timeout: 10)
 
     failing_work = ->() { raise "something" }
 
@@ -33,7 +33,7 @@ describe "CircuitBreaker" do
   it "stays closed after exception withint threshold"
 
   it "second call raises CircuitBrokenException" do
-    cb = Cb::CircuitBreaker.new(threshold: 1)
+    cb = Cb::CircuitBreaker.new(threshold: 1, half_open_timeout: 10)
 
     begin
       cb.execute do
@@ -49,7 +49,7 @@ describe "CircuitBreaker" do
   end
 
   it "never calls work block when circuit is broken" do
-    cb = Cb::CircuitBreaker.new(threshold: 0)
+    cb = Cb::CircuitBreaker.new(threshold: 0, half_open_timeout: 10)
 
     first_failing_work = ->() { raise "something" }
     called = false
