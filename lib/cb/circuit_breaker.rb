@@ -1,4 +1,5 @@
 class Cb::CircuitBreaker
+  attr_reader :threshold, :error_count
   def initialize(opts)
     @threshold = opts[:threshold]
     @state = :closed
@@ -9,7 +10,7 @@ class Cb::CircuitBreaker
   def execute(&block)
     update_state
 
-    raise Cb::CircuitBrokenException if @state == :open
+    raise Cb::CircuitBrokenException if open?
 
     do_execute(&block)
   end
@@ -19,23 +20,44 @@ class Cb::CircuitBreaker
   def do_execute
     yield
   rescue => e
-    @error_count += 1
-    if @error_count > @threshold
+    if closed?
+      @error_count += 1
+      if error_count > threshold
+        open
+        raise Cb::CircuitBrokenException
+      else
+        raise
+      end
+    elsif half_open?
       open
       raise Cb::CircuitBrokenException
-    else
-      raise
     end
   end
 
   def update_state
-    if @state == :open && @last_trip_time + 10 < Time.now
-      @state = :half_open
+    if open? && @last_trip_time + 10 < Time.now
+      half_reset
     end
   end
 
   def open
     @last_trip_time = Time.now
     @state = :open
+  end
+
+  def half_reset
+    @state = :half_open
+  end
+
+  def open?
+    @state == :open
+  end
+
+  def closed?
+    @state == :closed
+  end
+
+  def half_open?
+    @state == :half_open
   end
 end

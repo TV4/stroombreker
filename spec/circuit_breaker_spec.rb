@@ -117,7 +117,35 @@ describe "CircuitBreaker" do
     }.to raise_error(Cb::CircuitBrokenException)
   end
 
-  it "immediatly goes back to open"
+  it "immediatly goes back to open" do
+    cb = Cb::CircuitBreaker.new(threshold: 1, half_open_timeout: 10)
+
+    work_with_error = ->() {
+      raise "Something went wrong"
+    }
+
+    begin
+      cb.execute(&work_with_error) # raises, cb opens
+    rescue; end
+
+    with_expected_broken_circuit {
+      cb.execute(&work_with_error)
+    }
+
+    Timecop.travel(11.minutes.from_now)
+
+    with_expected_broken_circuit {
+      cb.execute(&work_with_error)
+    }
+
+    work_called = false
+    work = ->() { work_called = false }
+    with_expected_broken_circuit {
+      cb.execute(&work)
+    }
+
+    expect(work_called).to eq(false)
+  end
 
   def with_expected_broken_circuit
     yield
