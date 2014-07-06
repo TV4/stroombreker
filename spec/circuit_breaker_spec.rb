@@ -23,97 +23,56 @@ describe "CircuitBreaker" do
   it "returns the cause exception if within threshold" do
     cb = Cb::CircuitBreaker.new(threshold: 1, half_open_timeout: 10)
 
-    failing_work = ->() { raise "something" }
-
     expect {
       cb.execute(&failing_work)
     }.to raise_error(/something/)
   end
 
-  it "stays closed after exception withint threshold"
-
   it "second call raises CircuitBrokenException" do
     cb = Cb::CircuitBreaker.new(threshold: 1, half_open_timeout: 10)
 
-    begin
-      cb.execute do
-        raise "something"
-      end
-    rescue; end
+    with_expected_underlying_error { cb.execute(&failing_work) }
 
     expect {
-      cb.execute do
-        raise "something"
-      end
+      cb.execute(&failing_work)
     }.to raise_error(Cb::CircuitBrokenException)
   end
 
   it "never calls work block when circuit is broken" do
     cb = Cb::CircuitBreaker.new(threshold: 0, half_open_timeout: 10)
 
-    first_failing_work = ->() { raise "something" }
     called = false
-    second_work = ->() { called = true }
+    work_spy = ->() { called = true }
 
-    with_expected_broken_circuit {
-      cb.execute(&first_failing_work)
-    }
-
-    with_expected_broken_circuit {
-      cb.execute(&second_work)
-    }
+    with_expected_broken_circuit { cb.execute(&failing_work) }
+    with_expected_broken_circuit { cb.execute(&work_spy) }
 
     expect(called).to eq(false)
   end
 
-  it "keep the nested exception"
-
   it "returns the value in half-open" do
     cb = Cb::CircuitBreaker.new(threshold: 1, half_open_timeout: 10)
 
-    work_with_error = ->() {
-      raise "Something went wrong"
-    }
-
-    successful_work = ->() {
-      "simulated response"
-    }
-
-    begin
-      cb.execute(&work_with_error) # raises, cb opens
-    rescue; end
-    with_expected_broken_circuit {
-      cb.execute(&work_with_error) # raises, cb opens
-    }
+    with_expected_underlying_error { cb.execute(&failing_work) }
+    with_expected_broken_circuit { cb.execute(&failing_work) }
 
     Timecop.travel(11.minutes.from_now)
 
-    value = cb.execute(&successful_work) # works, cb in half-open, returns value
+    value = cb.execute(&working_work)
 
-    expect(value).to eq("simulated response")
-
-    #cb.stuff(&work_with_error) # raises, cb closes again
-    #cb.stuff(&successful_work) # cb open, insta-fails
+    expect(value).to eq("simulated api call")
   end
 
   it "raises error in half-open" do
     cb = Cb::CircuitBreaker.new(threshold: 1, half_open_timeout: 10)
 
-    work_with_error = ->() {
-      raise "Something went wrong"
-    }
-
-    begin
-      cb.execute(&work_with_error) # raises, cb opens
-    rescue; end
-    with_expected_broken_circuit {
-      cb.execute(&work_with_error)
-    }
+    with_expected_underlying_error { cb.execute(&failing_work) }
+    with_expected_broken_circuit { cb.execute(&failing_work) }
 
     Timecop.travel(11.minutes.from_now)
 
     expect {
-      cb.execute(&work_with_error)
+      cb.execute(&failing_work)
     }.to raise_error(Cb::CircuitBrokenException)
   end
 
@@ -124,34 +83,18 @@ describe "CircuitBreaker" do
       raise "Something went wrong"
     }
 
-    begin
-      cb.execute(&work_with_error) # raises, cb opens
-    rescue; end
-
-    with_expected_broken_circuit {
-      cb.execute(&work_with_error)
-    }
+    with_expected_underlying_error { cb.execute(&work_with_error) }
+    with_expected_broken_circuit { cb.execute(&work_with_error) }
 
     Timecop.travel(11.minutes.from_now)
 
-    with_expected_broken_circuit {
-      cb.execute(&work_with_error)
-    }
+    with_expected_broken_circuit { cb.execute(&work_with_error) }
 
     work_called = false
-    work = ->() { work_called = false }
-    with_expected_broken_circuit {
-      cb.execute(&work)
-    }
+    work_spy = ->() { work_called = false }
+    with_expected_broken_circuit { cb.execute(&work_spy) }
 
     expect(work_called).to eq(false)
-  end
-
-  def with_expected_broken_circuit
-    yield
-    raise "expected a raised CircuitBrokenException, but didn't get it"
-  rescue Cb::CircuitBrokenException
-    # ignore, since we expect this exception
   end
 
   xit "switches to closed after timeout seconds of working stuff" do
@@ -168,5 +111,33 @@ describe "CircuitBreaker" do
     # cb now in half-open state
     # Move 21s forward in time
     cb.stuff(&simulated_work) # Raises "something" (not CircuitBrokenException)
+  end
+
+  it "stays closed after exception withint threshold"
+  it "keep the nested exception"
+
+
+  def with_expected_broken_circuit
+    yield
+    raise "expected a raised CircuitBrokenException, but didn't get it"
+  rescue Cb::CircuitBrokenException
+    # ignore, since we expect this exception
+  end
+
+  def with_expected_underlying_error(&block)
+    block.call
+  rescue Cb::CircuitBrokenException => e
+    # We expect an underlying exception, not a CircuitBrokenException
+    raise "Unexpected CircuitBrokenException"
+  rescue
+    # Ignore, since it is expected
+  end
+
+  def failing_work
+    ->() { raise "something" }
+  end
+
+  def working_work
+    ->() { "simulated api call" }
   end
 end
