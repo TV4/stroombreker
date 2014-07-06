@@ -4,19 +4,22 @@ class Cb::CircuitBreaker
     @last_failure_time = nil
   end
 
-  def execute
+  def execute(&block)
     update_state
 
     raise Cb::CircuitBrokenException if @state == :open
 
-    yield
-  rescue => e
-    open
-    puts e
-    raise Cb::CircuitBrokenException
+    do_execute(&block)
   end
 
   private
+
+  def do_execute
+    yield
+  rescue => e
+    open
+    raise Cb::CircuitBrokenException
+  end
 
   def update_state
     if @state == :open && @last_failure_time + 10 < Time.now
