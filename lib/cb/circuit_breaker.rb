@@ -1,7 +1,9 @@
 class Cb::CircuitBreaker
   def initialize(opts)
+    @threshold = opts[:threshold]
     @state = :closed
-    @last_failure_time = nil
+    @last_trip_time = nil
+    @error_count = 0
   end
 
   def execute(&block)
@@ -17,18 +19,23 @@ class Cb::CircuitBreaker
   def do_execute
     yield
   rescue => e
-    open
-    raise Cb::CircuitBrokenException
+    @error_count += 1
+    if @error_count > @threshold
+      open
+      raise Cb::CircuitBrokenException
+    else
+      raise
+    end
   end
 
   def update_state
-    if @state == :open && @last_failure_time + 10 < Time.now
+    if @state == :open && @last_trip_time + 10 < Time.now
       @state = :half_open
     end
   end
 
   def open
-    @last_failure_time = Time.now
+    @last_trip_time = Time.now
     @state = :open
   end
 end
