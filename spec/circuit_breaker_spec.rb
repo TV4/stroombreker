@@ -1,9 +1,15 @@
 $: << Pathname(__FILE__) + ".." + ".." + "lib"
 
 require "cb"
+require "timecop"
 require "pry"
+require "active_support/core_ext/numeric/time"
 
 describe "CircuitBreaker" do
+  after do
+    Timecop.return
+  end
+
   it "passes response value back when everything works" do
     cb = Cb::CircuitBreaker.new(threshold: 0)
 
@@ -49,7 +55,7 @@ describe "CircuitBreaker" do
   it "keep the nested exception"
 
   it "returns the value in half-open" do
-    cb = CircuitBreaker.new(threshold: 1, half_open_timeout: 10)
+    cb = Cb::CircuitBreaker.new(threshold: 1, half_open_timeout: 10)
 
     work_with_error = ->() {
       raise "Something went wrong"
@@ -63,8 +69,11 @@ describe "CircuitBreaker" do
       cb.execute(&work_with_error) # raises, cb opens
     }
 
-    # Move 11 s forward in time
-    cb.execute(&successful_work) # works, cb in half-open, returns value
+    Timecop.travel(11.minutes.from_now)
+
+    value = cb.execute(&successful_work) # works, cb in half-open, returns value
+
+    expect(value).to eq("simulated response")
 
 
     #cb.stuff(&work_with_error) # raises, cb closes again

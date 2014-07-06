@@ -20,6 +20,11 @@ Or install it yourself as:
 
 TODO: Write usage instructions here
 
+## TODO
+
+- Remove the dependency on activesupport. It was only added because I (Patrik)
+  was lazy when writing specs
+
 ## Contributing
 
 1. Fork it
