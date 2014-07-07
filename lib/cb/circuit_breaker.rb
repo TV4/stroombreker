@@ -19,9 +19,7 @@ class Cb::CircuitBreaker
   private
 
   def do_execute
-    ret = yield
-    reset
-    ret
+    execution_result = yield
   rescue => e
     if closed?
       @error_count += 1
@@ -35,6 +33,9 @@ class Cb::CircuitBreaker
       open
       raise
     end
+  else
+    reset
+    execution_result
   end
 
   def update_state
