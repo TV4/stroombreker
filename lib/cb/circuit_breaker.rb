@@ -1,9 +1,8 @@
 class Cb::CircuitBreaker
-  attr_reader :threshold, :error_count, :half_open_timeout, :close_timeout
+  attr_reader :threshold, :error_count, :half_open_timeout
   def initialize(opts)
     @threshold = opts.fetch(:threshold)
     @half_open_timeout = opts.fetch(:half_open_timeout)
-    @close_timeout = opts.fetch(:close_timeout)
     @state = :closed
     @last_trip_time = nil
     @error_count = 0
@@ -20,7 +19,9 @@ class Cb::CircuitBreaker
   private
 
   def do_execute
-    yield
+    ret = yield
+    reset
+    ret
   rescue => e
     if closed?
       @error_count += 1
@@ -32,7 +33,7 @@ class Cb::CircuitBreaker
       end
     elsif half_open?
       open
-      raise Cb::CircuitBrokenException
+      raise
     end
   end
 
@@ -41,9 +42,6 @@ class Cb::CircuitBreaker
       half_reset
     end
 
-    if half_open? && @last_trip_time + half_open_timeout + close_timeout < Time.now
-      reset
-    end
   end
 
   def open
