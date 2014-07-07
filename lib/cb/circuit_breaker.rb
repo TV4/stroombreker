@@ -39,7 +39,7 @@ class Cb::CircuitBreaker
 
   def update_state
     if open? && @last_trip_time + half_open_timeout < Time.now
-      half_reset
+      attemt_reset
     end
 
   end
@@ -49,7 +49,7 @@ class Cb::CircuitBreaker
     @state = :open
   end
 
-  def half_reset
+  def attemt_reset
     @state = :half_open
   end
 
