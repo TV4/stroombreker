@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = Stroombreker::VERSION
   spec.authors       = ["Patrik Stenmark"]
   spec.email         = ["patrik@stenmark.io"]
-  spec.description   = %q{TODO: Write a gem description}
-  spec.summary       = %q{TODO: Write a gem summary}
+  spec.description   = %q{An implementation of the circuit breaker pattern}
+  spec.summary       = %q{An implementation of the circuit breaker pattern}
   spec.homepage      = ""
   spec.license       = "MIT"
 
