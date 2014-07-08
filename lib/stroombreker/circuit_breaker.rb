@@ -1,4 +1,4 @@
-class Cb::CircuitBreaker
+class Stroombreker::CircuitBreaker
   class MemoryStateStore
     def initialize
       @error_count = 0
@@ -29,7 +29,7 @@ class Cb::CircuitBreaker
   def execute(&block)
     update_state
 
-    raise Cb::CircuitBrokenException if open?
+    raise Stroombreker::CircuitBrokenException if open?
 
     do_execute(&block)
   end
@@ -43,7 +43,7 @@ class Cb::CircuitBreaker
       @state_store.increment_error_count
       if @state_store.error_count > threshold
         open
-        raise Cb::CircuitBrokenException
+        raise Stroombreker::CircuitBrokenException
       else
         raise
       end
