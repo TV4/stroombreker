@@ -1,11 +1,29 @@
 class Cb::CircuitBreaker
+  class MemoryStateStore
+    def initialize
+      @error_count = 0
+    end
+
+    def error_count
+      @error_count
+    end
+
+    def increment_error_count
+      @error_count += 1
+    end
+
+    def reset_error_count
+      @error_count = 0
+    end
+  end
+
   attr_reader :threshold, :error_count, :half_open_timeout
   def initialize(opts)
     @threshold = opts.fetch(:threshold)
     @half_open_timeout = opts.fetch(:half_open_timeout)
     @state = :closed
+    @state_store = MemoryStateStore.new
     @last_trip_time = nil
-    @error_count = 0
   end
 
   def execute(&block)
@@ -22,8 +40,8 @@ class Cb::CircuitBreaker
     execution_result = yield
   rescue => e
     if closed?
-      @error_count += 1
-      if error_count > threshold
+      @state_store.increment_error_count
+      if @state_store.error_count > threshold
         open
         raise Cb::CircuitBrokenException
       else
@@ -56,7 +74,7 @@ class Cb::CircuitBreaker
 
   def reset
     @state = :closed
-    @error_count = 0
+    @state_store.reset_error_count
     @last_trip_time = nil
   end
 
