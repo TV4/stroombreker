@@ -10,8 +10,31 @@ describe "CircuitBreaker" do
     Timecop.return
   end
 
+  class MemoryStateStore
+    def initialize
+      @error_counts = Hash.new { 0 }
+    end
+
+    def error_count(name)
+      @error_counts[name]
+    end
+
+    def increment_error_count(name)
+      @error_counts[name] += 1
+    end
+
+    def reset_error_count(name)
+      @error_counts[name] = 0
+    end
+  end
+
+  def create_circuit_breaker(opts = {})
+    opts = {threshold: 1, half_open_timeout: 10, name: :cb, state_store: MemoryStateStore.new}.merge(opts)
+    Stroombreker::CircuitBreaker.new(opts)
+  end
+
   it "passes response value back when everything works" do
-    cb = Stroombreker::CircuitBreaker.new(threshold: 0, half_open_timeout: 10)
+    cb = create_circuit_breaker
 
     value = cb.execute do
       "simulated api call"
@@ -21,7 +44,7 @@ describe "CircuitBreaker" do
   end
 
   it "returns the cause exception if within threshold" do
-    cb = Stroombreker::CircuitBreaker.new(threshold: 1, half_open_timeout: 10)
+    cb = create_circuit_breaker
 
     expect {
       cb.execute(&failing_work)
@@ -29,7 +52,7 @@ describe "CircuitBreaker" do
   end
 
   it "second call raises CircuitBrokenException" do
-    cb = Stroombreker::CircuitBreaker.new(threshold: 1, half_open_timeout: 10)
+    cb = create_circuit_breaker
 
     with_expected_underlying_error { cb.execute(&failing_work) }
 
@@ -39,7 +62,7 @@ describe "CircuitBreaker" do
   end
 
   it "never calls work block when circuit is broken" do
-    cb = Stroombreker::CircuitBreaker.new(threshold: 0, half_open_timeout: 10)
+    cb = create_circuit_breaker(threshold: 0)
 
     called = false
     work_spy = ->() { called = true }
@@ -51,7 +74,7 @@ describe "CircuitBreaker" do
   end
 
   it "returns the value in half-open" do
-    cb = Stroombreker::CircuitBreaker.new(threshold: 1, half_open_timeout: 10)
+    cb = create_circuit_breaker
 
     with_expected_underlying_error { cb.execute(&failing_work) }
     with_expected_broken_circuit { cb.execute(&failing_work) }
@@ -64,7 +87,7 @@ describe "CircuitBreaker" do
   end
 
   it "raises error in half-open" do
-    cb = Stroombreker::CircuitBreaker.new(threshold: 1, half_open_timeout: 10)
+    cb = create_circuit_breaker
 
     with_expected_underlying_error { cb.execute(&failing_work) }
     with_expected_broken_circuit { cb.execute(&failing_work) }
@@ -77,7 +100,7 @@ describe "CircuitBreaker" do
   end
 
   it "immediatly goes back to open" do
-    cb = Stroombreker::CircuitBreaker.new(threshold: 1, half_open_timeout: 10)
+    cb = create_circuit_breaker
 
     with_expected_underlying_error { cb.execute(&failing_work) }
     with_expected_broken_circuit { cb.execute(&failing_work) }
@@ -85,16 +108,14 @@ describe "CircuitBreaker" do
     Timecop.travel(11.seconds.from_now)
 
     with_expected_underlying_error { cb.execute(&failing_work) }
-
     work_called = false
     work_spy = ->() { work_called = false }
     with_expected_broken_circuit { cb.execute(&work_spy) }
-
     expect(work_called).to eq(false)
   end
 
   it "switches to closed after timeout seconds of working stuff" do
-    cb = Stroombreker::CircuitBreaker.new(threshold: 1, half_open_timeout: 20)
+    cb = create_circuit_breaker
 
     with_expected_underlying_error { cb.execute(&failing_work) }
     with_expected_broken_circuit { cb.execute(&failing_work) }
@@ -107,6 +128,18 @@ describe "CircuitBreaker" do
 
     expect {
       cb.execute(&failing_work)
+    }.to raise_error(Stroombreker::CircuitBrokenException)
+  end
+
+  it "saves state between different CBs with same name" do
+    store = MemoryStateStore.new
+    cb1 = create_circuit_breaker(name: "CB", state_store: store)
+    cb2 = create_circuit_breaker(name: "CB", state_store: store)
+
+    with_expected_underlying_error { cb1.execute(&failing_work) }
+
+    expect {
+      cb2.execute(&failing_work)
     }.to raise_error(Stroombreker::CircuitBrokenException)
   end
 
