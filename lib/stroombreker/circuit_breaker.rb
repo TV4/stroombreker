@@ -1,6 +1,6 @@
 class Stroombreker::CircuitBreaker
 
-  attr_reader :threshold, :error_count, :half_open_timeout
+  attr_reader :threshold, :half_open_timeout
   def initialize(opts)
     @threshold = opts.fetch(:threshold)
     @half_open_timeout = opts.fetch(:half_open_timeout)
