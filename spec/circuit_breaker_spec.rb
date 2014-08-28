@@ -10,47 +10,8 @@ describe "CircuitBreaker" do
     Timecop.return
   end
 
-  class MemoryStateStore
-    def initialize
-      @states = Hash.new { |hash, key|  hash[key] = { error_count: 0, state: :closed, last_trip_time: nil } }
-    end
-
-    def error_count(name)
-      @states[name][:error_count]
-    end
-
-    def increment_error_count(name)
-      @states[name][:error_count] += 1
-    end
-
-    def get_state(name)
-      @states[name][:state]
-    end
-
-    def get_last_trip_time(name)
-      @states[name][:last_trip_time]
-    end
-
-    def reset(name)
-      @states[name] = {
-        error_count: 0,
-        state: :closed,
-        last_trip_time: nil
-      }
-    end
-
-    def open(name)
-      @states[name][:last_trip_time] = Time.now
-      @states[name][:state] = :open
-    end
-
-    def attempt_reset(name)
-      @states[name][:state] = :half_open
-    end
-  end
-
   def create_circuit_breaker(opts = {})
-    opts = {threshold: 1, half_open_timeout: 10, name: :cb, state_store: MemoryStateStore.new}.merge(opts)
+    opts = {threshold: 1, half_open_timeout: 10, name: :cb, state_store: Stroombreker::MemoryStateStore.new}.merge(opts)
     Stroombreker::CircuitBreaker.new(opts)
   end
 
@@ -153,7 +114,7 @@ describe "CircuitBreaker" do
   end
 
   it "saves state between different CBs with same name" do
-    store = MemoryStateStore.new
+    store = Stroombreker::MemoryStateStore.new
     cb1 = create_circuit_breaker(name: "CB", state_store: store)
     cb2 = create_circuit_breaker(name: "CB", state_store: store)
 
