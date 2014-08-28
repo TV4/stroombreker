@@ -12,7 +12,7 @@ describe "CircuitBreaker" do
 
   class MemoryStateStore
     def initialize
-      @states = Hash.new { |hash, key|  hash[key] = { error_count: 0 } }
+      @states = Hash.new { |hash, key|  hash[key] = { error_count: 0, state: :closed } }
     end
 
     def error_count(name)
@@ -26,6 +26,15 @@ describe "CircuitBreaker" do
     def reset_error_count(name)
       @states[name][:error_count] = 0
     end
+
+    def set_state(name, state)
+      @states[name][:state] = state
+    end
+
+    def get_state(name)
+      @states[name][:state]
+    end
+
   end
 
   def create_circuit_breaker(opts = {})

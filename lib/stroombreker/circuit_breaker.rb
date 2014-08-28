@@ -6,7 +6,6 @@ class Stroombreker::CircuitBreaker
     @half_open_timeout = opts.fetch(:half_open_timeout)
     @name = opts.fetch(:name)
     @state_store = opts.fetch(:state_store)
-    @state = :closed
     @last_trip_time = nil
   end
 
@@ -44,33 +43,36 @@ class Stroombreker::CircuitBreaker
     if open? && @last_trip_time + half_open_timeout < Time.now
       attemt_reset
     end
-
   end
 
   def open
     @last_trip_time = Time.now
-    @state = :open
+    @state_store.set_state(@name, :open)
   end
 
   def attemt_reset
-    @state = :half_open
+    @state_store.set_state(@name, :half_open)
   end
 
   def reset
-    @state = :closed
+    @state_store.set_state(@name, :closed)
     @state_store.reset_error_count(@name)
     @last_trip_time = nil
   end
 
   def open?
-    @state == :open
+    state == :open
   end
 
   def closed?
-    @state == :closed
+    state == :closed
   end
 
   def half_open?
-    @state == :half_open
+    state == :half_open
+  end
+
+  def state
+    @state_store.get_state(@name)
   end
 end
