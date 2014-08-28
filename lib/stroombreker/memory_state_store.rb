@@ -17,7 +17,9 @@ module Stroombreker
     end
 
     def get_last_trip_time(name)
-      @states[name][:last_trip_time]
+      time = @states[name][:last_trip_time]
+      return nil if time.nil?
+      DateTime.parse(time).to_time
     end
 
     def reset(name)
@@ -29,7 +31,7 @@ module Stroombreker
     end
 
     def open(name)
-      @states[name][:last_trip_time] = Time.now
+      @states[name][:last_trip_time] = Time.now.iso8601
       @states[name][:state] = :open
     end
 
