@@ -95,6 +95,26 @@ example, some HTTP libraries doesn't raise error on timeouts (Typhoeus for
 example).
 
 
+### State stores
+
+By default, Stroombreker uses a per process Hash to store the current state in,
+implemented in `Stroombreker::MemoryStateStore`. This will of course not be
+usable in a multi thread/process environment. Another StateStore implementation
+is included in the form of `Stroombreker::RedisStateStore`. To specify a
+store, use the `:state_store` param to `Stroombreker.register`:
+
+````ruby
+redis_connection = Redis.connect # or get a redis connection some other way
+Stroombreker.register(
+  # ... other params
+  state_store: Stroombreker::RedisStateStore.new(redis_connection)
+)
+````
+
+To implement another StateStore (memcached anyone?), there are contract tests
+for that in `spec/state_store.rb`. See `spec/memory_state_store_spec.rb` and
+`spec/redis_state_store_spec` for examples.
+
 ### Status
 
 You can get status for all registered Circuit breakers by calling
