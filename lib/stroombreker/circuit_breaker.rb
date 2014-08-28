@@ -5,7 +5,7 @@ class Stroombreker::CircuitBreaker
     @threshold = opts.fetch(:threshold)
     @half_open_timeout = opts.fetch(:half_open_timeout)
     @name = opts.fetch(:name)
-    @state_store = opts.fetch(:state_store)
+    @state_store = opts.fetch(:state_store) { Stroombreker::MemoryStateStore.new }
   end
 
   def execute(&block)

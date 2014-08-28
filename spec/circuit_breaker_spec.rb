@@ -11,7 +11,7 @@ describe "CircuitBreaker" do
   end
 
   def create_circuit_breaker(opts = {})
-    opts = {threshold: 1, half_open_timeout: 10, name: :cb, state_store: Stroombreker::MemoryStateStore.new}.merge(opts)
+    opts = {threshold: 1, half_open_timeout: 10, name: :cb}.merge(opts)
     Stroombreker::CircuitBreaker.new(opts)
   end
 
