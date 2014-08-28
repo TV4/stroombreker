@@ -24,4 +24,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "pry", "~> 0.9.12"
   spec.add_development_dependency "timecop", "~> 0.7.1"
   spec.add_development_dependency "activesupport"
+  spec.add_development_dependency "mock_redis"
 end
