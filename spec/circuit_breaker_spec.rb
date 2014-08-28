@@ -23,24 +23,29 @@ describe "CircuitBreaker" do
       @states[name][:error_count] += 1
     end
 
-    def reset_error_count(name)
-      @states[name][:error_count] = 0
-    end
-
-    def set_state(name, state)
-      @states[name][:state] = state
-    end
-
     def get_state(name)
       @states[name][:state]
     end
 
-    def set_last_trip_time(name, time)
-      @states[name][:last_trip_time] = time
-    end
-
     def get_last_trip_time(name)
       @states[name][:last_trip_time]
+    end
+
+    def reset(name)
+      @states[name] = {
+        error_count: 0,
+        state: :closed,
+        last_trip_time: nil
+      }
+    end
+
+    def open(name)
+      @states[name][:last_trip_time] = Time.now
+      @states[name][:state] = :open
+    end
+
+    def attempt_reset(name)
+      @states[name][:state] = :half_open
     end
   end
 

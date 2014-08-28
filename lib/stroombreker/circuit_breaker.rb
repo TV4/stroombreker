@@ -45,18 +45,15 @@ class Stroombreker::CircuitBreaker
   end
 
   def open
-    @state_store.set_last_trip_time(@name, Time.now)
-    @state_store.set_state(@name, :open)
+    @state_store.open(@name)
   end
 
   def attemt_reset
-    @state_store.set_state(@name, :half_open)
+    @state_store.attempt_reset(@name)
   end
 
   def reset
-    @state_store.set_state(@name, :closed)
-    @state_store.reset_error_count(@name)
-    @state_store.set_last_trip_time(@name, nil)
+    @state_store.reset(@name)
   end
 
   def open?
