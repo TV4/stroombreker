@@ -48,16 +48,24 @@ If the request succeeds, the breaker returns to its original `closed` state.
 require "stroombreaker"
 require "http_lib"
 
-# Initialize a circuit breaker
-breaker = Stroombreker::CircuitBreaker.new(
+# Register a circuit breaker
+Stroombreker.register(
     threshold: 1,                            # The number of errors before
                                              # tripping the breaker.
     half_open_timeout: 10                    # The number of seconds before
                                              # the breaker returns to 
                                              # half-open state.
-    name: "my-breaker"                       # The name of the breaker. See
+    name: :my_breaker                        # The name of the breaker. See
                                              # persistence below.
 )
+````
+
+The arguments to `.register` is passed to the constructor of
+`Stroombreker::CircuitBreaker`.
+
+````ruby
+# Find a registered breaker
+breaker = Stroombreker[:my_breaker]
 
 # Execute some code through the breaker
 result = breaker.execute {
@@ -85,6 +93,12 @@ only about exceptions. This means that it is the responsibility of the block
 to make sure that errors raises an exception if there is an error condition. For
 example, some HTTP libraries doesn't raise error on timeouts (Typhoeus for 
 example).
+
+
+### Status
+
+You can get status for all registered Circuit breakers by calling
+`Stroombreker.all`. This returns the actual `CircuitBreaker` objects` objects.
 
 ## TODO
 

@@ -1,6 +1,6 @@
 class Stroombreker::CircuitBreaker
 
-  attr_reader :threshold, :half_open_timeout
+  attr_reader :threshold, :half_open_timeout, :name
   def initialize(opts)
     @threshold = opts.fetch(:threshold)
     @half_open_timeout = opts.fetch(:half_open_timeout)
@@ -14,6 +14,10 @@ class Stroombreker::CircuitBreaker
     raise Stroombreker::CircuitBrokenException if open?
 
     do_execute(&block)
+  end
+
+  def state
+    @state_store.get_state(@name)
   end
 
   private
@@ -68,7 +72,4 @@ class Stroombreker::CircuitBreaker
     state == :half_open
   end
 
-  def state
-    @state_store.get_state(@name)
-  end
 end
