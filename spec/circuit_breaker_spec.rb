@@ -12,19 +12,19 @@ describe "CircuitBreaker" do
 
   class MemoryStateStore
     def initialize
-      @error_counts = Hash.new { 0 }
+      @states = Hash.new { |hash, key|  hash[key] = { error_count: 0 } }
     end
 
     def error_count(name)
-      @error_counts[name]
+      @states[name][:error_count]
     end
 
     def increment_error_count(name)
-      @error_counts[name] += 1
+      @states[name][:error_count] += 1
     end
 
     def reset_error_count(name)
-      @error_counts[name] = 0
+      @states[name][:error_count] = 0
     end
   end
 
