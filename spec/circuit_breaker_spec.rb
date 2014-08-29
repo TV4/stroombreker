@@ -6,6 +6,9 @@ require "pry"
 require "active_support/core_ext/numeric/time"
 
 describe "CircuitBreaker" do
+  before do
+    Stroombreker.store = Stroombreker::MemoryStateStore.new
+  end
   after do
     Timecop.return
   end
@@ -114,9 +117,8 @@ describe "CircuitBreaker" do
   end
 
   it "saves state between different CBs with same name" do
-    store = Stroombreker::MemoryStateStore.new
-    cb1 = create_circuit_breaker(name: "CB", state_store: store)
-    cb2 = create_circuit_breaker(name: "CB", state_store: store)
+    cb1 = create_circuit_breaker(name: "CB")
+    cb2 = create_circuit_breaker(name: "CB")
 
     with_expected_underlying_error { cb1.execute(&failing_work) }
 

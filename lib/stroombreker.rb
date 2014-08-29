@@ -16,6 +16,14 @@ module Stroombreker
   def self.all
     @breakers.values
   end
+
+  def self.store
+    @store ||= MemoryStateStore.new
+  end
+
+  def self.store=(store)
+    @store = store
+  end
 end
 
 class Stroombreker::CircuitBrokenException < StandardError; end 
